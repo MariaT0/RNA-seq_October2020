@@ -1,0 +1,18 @@
+---
+title: "RNA-seq_Plotting"
+author: "MTM"
+date: "10/10/2020"
+output: html_document
+---
+
+# Loading Souce Data 
+
+Loaded human log2FC data, normalized counts and sample guide from Posfai's Plos Pathogens paper, and lncRNA plus gene neighbor lists from Kaessman's Nature paper.
+```{r}
+Hs_Log2FC <- read.csv("source_data/Hs_Log2FC.csv")
+lncRNAs_paper <-read.csv("source_data/lncRNAs_filtered_data_Kaessmann2019.csv")
+norm_counts_all<-read.csv("source_data/Norm_counts_all.csv")
+sample_guide<-read.csv("source_data/SampleGuide_data_dds.csv")
+
+```
+
