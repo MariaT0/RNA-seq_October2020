@@ -91,6 +91,189 @@ NA values have been removed.Here I am not sure if I removed IDs that did had an 
 
 ```{r}
 sig_DE_lncRNA <- sig_DE_all[sig_DE_all$Ensembl.ID %in% lncRNAs_paper$Ensembl.ID,]
+print(sig_DE_lncRNA)
+```
+#Visualizing DE lncRNAs
+
+Install and load packages that will be needed
+```{r}
+install.packages("DESeq2")
+install.packages("reshape")
+install.packages("ggrepel")
+install.packages("DEGreport")
+install.packages("RColorBrewer")
+install.packages("pheatmap")
+# Load libraries
+library(reshape)
+library(ggplot2)
+library(ggrepel)
+library(RColorBrewer)
+library(pheatmap)
+
+```
+DESeq2 and DEGreport couldn't be installed.
+
+Before it gets more complicated, I am going to split my data per cell line.
+```{r}
+sig_DE_lncRNA_hepg2<-sig_DE_lncRNA["HepG2",]
+sig_DE_lncRNA_huh7<-sig_DE_lncRNA["HuH7",]
+```
+This didn't work, so will remove them.
+```{r}
+rm(sig_DE_lncRNA_hepg2)
+rm(sig_DE_lncRNA_huh7)
 ```
 
+Try again
+
+```{r}
+sig_DE_lncRNA_hepg2<-sig_DE_lncRNA[sig_DE_lncRNA$Cell.line=="HepG2",]
+sig_DE_lncRNA_huh7<-sig_DE_lncRNA[sig_DE_lncRNA$Cell.line=="HuH7",]
+```
+I am going to focus on HepG2 for now
+
+Extract the normalized count values for these genes
+```{r}
+sig_DE_lncRNA_hepg2_counts<-norm_counts_all[sig_DE_lncRNA_hepg2,]
+```
+I'm going to try again picking only the column with the genes names (columns are lists)
+
+```{r}
+sig_DE_lncRNA_hepg2_counts<-norm_counts_all[sig_DE_lncRNA_hepg2$Ensembl.ID,]
+remove(sig_DE_lncRNA_hepg2_counts)
+```
+it produced a dataframe with all NA values so I removed it.
+
+
+```{r}
+remove(list_sig_DE_lncRNA_hepg2)
+```
+
+```{r}
+sig_DE_lncRNA_hepg2_ID<-sig_DE_lncRNA_hepg2$Ensembl.ID
+```
+Now, try again extracting the normalized count values for these gene
+
+```{r}
+sig_DE_lncRNA_hepg2_counts<-norm_counts_all["sig_DE_lncRNA_hepg2",]
+remove(sig_DE_lncRNA_hepg2_counts)
+```
+
+Try subsetting?
+```{r}
+sig_DE_lncRNA_hepg2_counts<- subset(norm_counts_all, Ensembl.ID=="sig_DE_lncRNA_hepg2_ID",)
+print(sig_DE_lncRNA_hepg2_counts)
+```
+Remove, again
+
+```{r}
+remove(sig_DE_lncRNA_hepg2_counts)
+```
+
+```{r}
+sig_DE_lncRNA_hepg2_counts<-norm_counts_all["sig_DE_lncRNA_hepg2_ID",]
+remove(sig_DE_lncRNA_hepg2_counts)
+```
+```{r}
+print(sig_DE_lncRNA_hepg2_ID)
+```
+
+
+Try other subsetting methods
+```{r}
+sig_DE_lncRNA_hepg2_counts <- norm_counts_all[norm_counts_all$Ensembl.ID %in% sig_DE_lncRNA_hepg2$Ensembl.ID,]
+remove(sig_DE_lncRNA_hepg2_ID)
+```
+
+It worked!
+
+Now that we have the normalized counts for our genes for all 41 samples, to plot using ggplot(), we need to gather the counts for all samples into a single column to allow us to give ggplot the one column with the values we want it to plot.
+
+The melt() function in the reshape R package will perform this operation and will output the normalized counts for all genes for sample 1 listed in the first 20 rows, followed by the normalized counts for sample 2 in the next 20 rows, so on and so forth.
+```{r}
+## use melt to modify the format of the data frame
+melted_sig_DE_lncRNA_hepg2_counts <- data.frame(melt(sig_DE_lncRNA_hepg2_counts))
+
+## check the column header in the "melted" data frame
+View(melted_sig_DE_lncRNA_hepg2_counts)
+
+## add column names that make sense
+colnames(melted_sig_DE_lncRNA_hepg2_counts) <- c("gene", "samplename", "normalized_counts")
+```
+
+Now, if we want our counts colored by sample group, then we need to combine the metadata information with the melted normalized counts data into the same data frame for input to ggplot():
+```{r}
+## add metadata to "melted" dataframe
+sample_guide$time.groups2 <- rownames(sample_guide)
+
+melted_sig_DE_lncRNA_hepg2_counts <- merge(melted_sig_DE_lncRNA_hepg2_counts, sample_guide)
+```
+
+Remember this contains all the huh7 samples too. What a mess. I'm going to remove several columns
+
+```{r}
+melted_sig_DE_lncRNA_hepg2_counts$samplename<-NULL
+melted_sig_DE_lncRNA_hepg2_counts$count<-NULL
+melted_sig_DE_lncRNA_hepg2_counts$time.groups<-NULL
+melted_sig_DE_lncRNA_hepg2_counts$time.groups2<-NULL
+```
+
+```{r}
+str(melted_sig_DE_lncRNA_hepg2_counts$analysis.groups)
+melted_sig_DE_lncRNA_hepg2_counts$analysis.groups<-as.factor(melted_sig_DE_lncRNA_hepg2_counts$analysis.groups)
+str(melted_sig_DE_lncRNA_hepg2_counts$analysis.groups)
+```
+
+
+Subset for HepG2 data (get rid of huh7)
+```{r}
+
+melted_sig_DE_lncRNA_hepg2_counts <- melted_sig_DE_lncRNA_hepg2_counts[melted_sig_DE_lncRNA_hepg2_counts$Cell.line =="HepG2",]
+
+```
+
+Now I am ready for making the heatmap
+
+```{r}
+### Annotate our heatmap (optional)
+annotation <- data.frame(analysis.groups=melted_sig_DE_lncRNA_hepg2_counts[,'analysis.groups'], 
+                     row.names=melted_sig_DE_lncRNA_hepg2_counts[,'gene'])
+
+### Set a color palette
+heat.colors <- brewer.pal(6, "YlOrRd")
+
+### Run pheatmap
+pheatmap(melted_sig_DE_lncRNA_hepg2_counts, color = heat.colors, cluster_rows = T, show_rownames=T,
+annotation= annotation, border_color=NA, fontsize = 10, scale="row",
+     fontsize_row = 10, height=20)
+```
+```{r}
+
+### Set a color palette
+heat.colors <- brewer.pal(6, "YlOrRd")
+
+### Run pheatmap
+pheatmap(melted_sig_DE_lncRNA_hepg2_counts, color = heat.colors, cluster_rows = T, show_rownames=T,
+annotation= annotation, border_color=NA, fontsize = 10, scale="row",
+     fontsize_row = 10, height=20)
+```
+pheatmap needs a matrix, can't work with a dataframe
+
+sig_DE_lncRNA_hepG2_counts was meant to be JUST the counts. so extract that.
+```{r}
+### Extract counts from sig_de_lncRNA_hepg2_counts to make it a matrix
+counts_sigLncHepG2 <- sig_DE_lncRNA_hepg2_counts[,(2:41)]
+```
+
+Try heatmap again
+
+```{r}
+### Set a color palette
+heat.colors <- brewer.pal(11, "PiYG")
+
+### Run pheatmap
+pheatmap(counts_sigLncHepG2, color = heat.colors, cluster_rows = T, show_rownames=F,
+, border_color=NA, fontsize = 10, scale="row",
+     fontsize_row = 10, height=20)
+```
 
