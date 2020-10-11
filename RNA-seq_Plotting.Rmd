@@ -2,17 +2,95 @@
 title: "RNA-seq_Plotting"
 author: "MTM"
 date: "10/10/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 # Loading Souce Data 
 
 Loaded human log2FC data, normalized counts and sample guide from Posfai's Plos Pathogens paper, and lncRNA plus gene neighbor lists from Kaessman's Nature paper.
 ```{r}
-Hs_Log2FC <- read.csv("source_data/Hs_Log2FC.csv")
-lncRNAs_paper <-read.csv("source_data/lncRNAs_filtered_data_Kaessmann2019.csv")
-norm_counts_all<-read.csv("source_data/Norm_counts_all.csv")
-sample_guide<-read.csv("source_data/SampleGuide_data_dds.csv")
+Hs_Log2FC <- read.csv("source_data/Hs_Log2FC.csv", header = TRUE)
+lncRNAs_paper <-read.csv("source_data/lncRNAs_filtered_data_Kaessmann2019.csv", header= TRUE)
+norm_counts_all<-read.csv("source_data/Norm_counts_all.csv", header = TRUE)
+sample_guide<-read.csv("source_data/SampleGuide_data_dds.csv", header = TRUE)
 
 ```
+
+Check data
+
+```{r}
+str(Hs_Log2FC)
+str(lncRNAs_paper)
+str(norm_counts_all)
+str(sample_guide)
+```
+
+# Clean up and transform dataframes
+
+1. Transform categorical data into factors
+```{r}
+Hs_Log2FC$Cell.line<-as.factor(Hs_Log2FC$Cell.line)
+Hs_Log2FC$time.point<-as.factor(Hs_Log2FC$time.point)
+sample_guide$Cell.line<-as.factor(sample_guide$Cell.line)
+sample_guide$time.groups2<-as.factor(sample_guide$time.groups2)
+```
+
+2. Rename some columns for simplicity.
+
+```{r}
+library(dplyr)
+lncRNAs_paper<-rename(lncRNAs_paper, Ensembl.ID=ENSEMBL75.id)
+norm_counts_all<-rename(norm_counts_all, Ensembl.ID=X )
+sample_guide<-rename(sample_guide, sample.ID=X)
+```
+
+#Plotting DEGs
+
+1. Create variables that contain threshold criteria. The lfc.cutoff is set to 0.58; remember that we are working with log2 fold changes so this translates to an actual fold change of 1.5.
+```{r}
+### Set thresholds
+padj.cutoff <- 0.05
+logfc.cutoff <- 0.58
+```
+2. Create vector that helps us identify the genes that meet our criteria:
+```{r}
+threshold<-Hs_Log2FC$adjusted.p.value<padj.cutoff & abs(Hs_Log2FC$log2FoldChange)>logfc.cutoff
+```
+We now have a logical vector of values that has a length which is equal to the total number of genes in the dataset. The elements that have a TRUE value correspond to genes that meet the criteria (and FALSE means it fails). How many genes are differentially expressed in the Overexpression compared to Control, given our criteria specified above? Does this reduce our results?
+```{r}
+length(which(threshold))
+```
+
+To add this vector to our results table we can use the $ notation to create the column on the left hand side of the assignment operator, and the assign the vector to it instead of using cbind():
+```{r}
+Hs_Log2FC$threshold<-threshold
+```
+Now we can easily subset the results table to only include those that are significant using the subset() function:
+```{r}
+sig_DE_all<-data.frame(subset(Hs_Log2FC,threshold==TRUE))
+```
+
+Subset lncRNAs from sig_DE_all
+
+1. Need to clean up lncRNA table
+```{r}
+#check how many lncRNAs are in table from paper
+length(lncRNAs_paper$Ensembl.ID)
+#test for NA values
+is.na(lncRNAs_paper$Ensembl.ID)
+#remove na in r - remove rows - na.omit function / option
+lncRNAs_paper <-na.omit(lncRNAs_paper)
+#test for NA values again
+is.na(lncRNAs_paper$Ensembl.ID)
+```
+NA values have been removed.Here I am not sure if I removed IDs that did had an NAs in some other column, but I think it doesn't matter. 
+
+2.Subset lncRNAs
+
+```{r}
+sig_DE_lncRNA <- sig_DE_all[sig_DE_all$Ensembl.ID %in% lncRNAs_paper$Ensembl.ID,]
+```
+
 
