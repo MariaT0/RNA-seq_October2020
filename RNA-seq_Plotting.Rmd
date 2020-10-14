@@ -189,7 +189,7 @@ library(pheatmap)
 ### Run pheatmap
 pheatmap(sigHepG2counts, color = heat.colors, cluster_rows = T, show_rownames=T,
  border_color=NA, fontsize = 10, scale="row",
-     fontsize_row = 10, height=20)
+     fontsize_row = 10, height=5, width = 5)
 ```
 ```
 
