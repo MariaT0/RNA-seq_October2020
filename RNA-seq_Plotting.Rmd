@@ -133,5 +133,64 @@ pheatmap(sig_DE_lncRNA_hepg2_counts, color = heat.colors, cluster_rows = T, show
  border_color=NA, fontsize = 10, scale="row",
      fontsize_row = 10, height=20)
 ```
+```{r}
+install.packages("plotly")
+```
+
+Backtrack and get only HepG2 samples
+
+```{r}
+#transform analysis.groups to factors
+sample_guide$analysis.groups<-as.factor(sample_guide$analysis.groups)
+#extract HepG2 samples
+HepG2samples<-sample_guide[sample_guide$Cell.line=="HepG2",c("sample.ID","analysis.groups")]
+```
+
+```{r}
+remove(siglncHepG2_counts)
+remove(counts_sigLncHepG2)
+```
+
+```{r}
+library(data.table)
+
+# get data
+  data(sig_DE_lncRNA_hepg2_counts)
+
+# transpose
+  t_sigHepG2counts <- transpose(sig_DE_lncRNA_hepg2_counts)
+
+colnames(t_sigHepG2counts) <- rownames(sig_DE_lncRNA_hepg2_counts)
+  rownames(t_sigHepG2counts) <- colnames(sig_DE_lncRNA_hepg2_counts)  
+  
+#make rownames a new column
+  setDT(t_sigHepG2counts, keep.rownames = "sample.ID")
+```
+
+Now subset
+```{r}
+sigHepG2lncs_counts<-t_sigHepG2counts[HepG2samples$sample.ID%in%t_sigHepG2counts$sample.ID,]
+remove(sigHepG2lncs_counts)
+```
+
+THERE IS AN ERROR IN THE SIG_HEPG2 COUNTS SAMPLE IDs. An X was added at some point in front of the name.
+
+```{r}
+#subset by indexing columns
+sigHepG2counts<-sig_DE_lncRNA_hepg2_counts[,c(28:40)]
+```
+
+Plot
+```{r}
+#load packages
+library(pheatmap)
+### Set a color palette
+ heat.colors <- brewer.pal(11, "PiYG")
+### Run pheatmap
+pheatmap(sigHepG2counts, color = heat.colors, cluster_rows = T, show_rownames=T,
+ border_color=NA, fontsize = 10, scale="row",
+     fontsize_row = 10, height=20)
+```
+```
 
 
