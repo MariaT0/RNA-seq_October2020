@@ -133,20 +133,6 @@ sig_DE_lncRNA_hepg2_counts <- norm_counts_all[norm_counts_all$Ensembl.ID %in% si
 sig_DE_lncRNA_hepg2_counts <- data.frame(sig_DE_lncRNA_hepg2_counts, row.names = 1)
 
 ```
-It worked!
-
-Make a heatmap:
-
-Note that this includes samples for HepG2 and Huh7, yet these are the lncRNAs that are differentially expressed in HepG2. 
-
-```{r}
-### Set a color palette
- heat.colors <- brewer.pal(11, "Set1")
-### Run pheatmap
-pheatmap(sig_DE_lncRNA_hepg2_counts, color = heat.colors, cluster_rows = T, show_rownames=T,
- border_color=NA, fontsize = 10, scale="row",
-     fontsize_row = 10, height=20)
-```
 
 Backtrack and get only HepG2 samples
 
@@ -193,7 +179,7 @@ THERE IS AN ERROR IN THE SIG_HEPG2 COUNTS SAMPLE IDs. An X was added at some poi
 sigHepG2counts<-sig_DE_lncRNA_hepg2_counts[,c(28:40)]
 ```
 
-Plot
+# Plot
 
 ```{r}
 #load packages
@@ -202,7 +188,7 @@ library(pheatmap)
 
 ### Set a color palette
 
-heat.colors <- brewer.pal(8, "Blues")
+heat.colors <- brewer.pal(11, "Set3")
 
 ### Run pheatmap
 
