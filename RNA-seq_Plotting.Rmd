@@ -1,15 +1,17 @@
 ---
 title: "RNA-seq_Plotting"
 author: "MTM"
+co-author: "Amkeele2"
 date: "10/10/2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 # Loading Souce Data 
 
 Loaded human log2FC data, normalized counts and sample guide from Posfai's Plos Pathogens paper, and lncRNA plus gene neighbor lists from Kaessman's Nature paper.
+
 ```{r}
 Hs_Log2FC <- read.csv("source_data/Hs_Log2FC.csv", header = TRUE)
 lncRNAs_paper <- read.csv("source_data/lncRNAs_filtered_data_Kaessmann2019.csv", header= TRUE)
@@ -20,7 +22,7 @@ sample_guide <- read.csv("source_data/SampleGuide_data_dds.csv", header = TRUE)
 
 Check data
 
-```{r}
+```{r, message=FALSE}
 str(Hs_Log2FC)
 str(lncRNAs_paper)
 str(norm_counts_all)
@@ -40,9 +42,9 @@ sample_guide$time.groups2 <- as.factor(sample_guide$time.groups2)
 2. Rename some columns for simplicity.
 
 ```{r}
-lncRNAs_paper <- rename(lncRNAs_paper, Ensembl.ID=ENSEMBL75.id)
-norm_counts_all <- rename(norm_counts_all, Ensembl.ID=X )
-sample_guide <- rename(sample_guide, sample.ID=X)
+lncRNAs_paper <- dplyr::rename(lncRNAs_paper, Ensembl.ID=ENSEMBL75.id)
+norm_counts_all <- dplyr::rename(norm_counts_all, Ensembl.ID=X )
+sample_guide <- dplyr::rename(sample_guide, sample.ID=X)
 ```
 
 
@@ -52,6 +54,7 @@ sample_guide <- rename(sample_guide, sample.ID=X)
 
 ```{r}
 ### Set thresholds
+
 padj.cutoff <- 0.05
 logfc.cutoff <- 0.58
 ```
@@ -86,11 +89,13 @@ sig_DE_all<-data.frame(subset(Hs_Log2FC,threshold==TRUE))
 
 ```{r}
 #check how many lncRNAs are in table from paper
+
 length(lncRNAs_paper$Ensembl.ID)
+
 #remove na in r - remove rows - na.omit function / option
+
 lncRNAs_paper <-na.omit(lncRNAs_paper)
-#test for NA values
-is.na(lncRNAs_paper$Ensembl.ID)
+
 ```
 
 NA values have been removed. Here I am not sure if I removed IDs that did had an NAs in some other column, but I think it doesn't matter. 
@@ -108,6 +113,7 @@ Load packages that will be needed
 ```{r, message=FALSE}
 
 # Load libraries
+
 library(reshape)
 library(ggplot2)
 library(ggrepel)
@@ -129,7 +135,9 @@ Extract the normalized count values for these genes by subsetting.
 
 ```{r}
 sig_DE_lncRNA_hepg2_counts <- norm_counts_all[norm_counts_all$Ensembl.ID %in% sig_DE_lncRNA_hepg2$Ensembl.ID,]
+
 # use first column for row names
+
 sig_DE_lncRNA_hepg2_counts <- data.frame(sig_DE_lncRNA_hepg2_counts, row.names = 1)
 
 ```
@@ -138,8 +146,11 @@ Backtrack and get only HepG2 samples
 
 ```{r}
 #transform analysis.groups to factors
+
 sample_guide$analysis.groups <- as.factor(sample_guide$analysis.groups)
+
 #extract HepG2 samples
+
 HepG2samples<-sample_guide[sample_guide$Cell.line=="HepG2",c("sample.ID","analysis.groups")]
 ```
 
@@ -152,24 +163,22 @@ remove(counts_sigLncHepG2)
 library(data.table)
 
 # get data
+
   data(sig_DE_lncRNA_hepg2_counts)
 
 # transpose
+  
   t_sigHepG2counts <- transpose(sig_DE_lncRNA_hepg2_counts)
 
 colnames(t_sigHepG2counts) <- rownames(sig_DE_lncRNA_hepg2_counts)
   rownames(t_sigHepG2counts) <- colnames(sig_DE_lncRNA_hepg2_counts)  
   
 #make rownames a new column
+  
   setDT(t_sigHepG2counts, keep.rownames = "sample.ID")
 ```
 
 Now subset
-
-```{r}
-sigHepG2lncs_counts <- t_sigHepG2counts[HepG2samples$sample.ID %in% t_sigHepG2counts$sample.ID,]
-remove(sigHepG2lncs_counts)
-```
 
 THERE IS AN ERROR IN THE SIG_HEPG2 COUNTS SAMPLE IDs. An X was added at some point in front of the name.
 
