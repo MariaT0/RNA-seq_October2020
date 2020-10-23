@@ -204,16 +204,39 @@ row.names(HepG2samples) <- colnames(sigHepG2counts)
 HepG2samples$analysis.groups <- factor(HepG2samples$analysis.groups, levels = c("HepG2.control","HepG2.early","HepG2.mid","HepG2.late")) #change order of legend display
 
 ### Set a color palette
-
 heat.colors <- brewer.pal(11, "PiYG")
-
-### Run pheatmap
 
 ## Run pheatmap
 pheatmap(sigHepG2counts, color = heat.colors, cluster_rows = T, cluster_cols = T,clustering_distance_cols = "correlation", clustering_distance_rows = "correlation", show_rownames=T, show_colnames = F,
  border_color=NA, fontsize = 10, scale="row",
      fontsize_row = 10, height=5, width = 5, annotation_col = HepG2samples)
 ```
+
+```{r}
+
+#load packages
+
+library(pheatmap)
+library(tidyverse)
+library(RColorBrewer)
+
+#relocate columns (samples) in df to allow pheatmap to plot in order
+
+sigHepG2counts <- sigHepG2counts %>% relocate(X50040_N_1,X50039_N_1,X50038_N_1,X50036_N_1)
+
+### Set a color palette
+heat.colors <- brewer.pal(11, "PiYG")
+
+## Run pheatmap
+pheatmap(sigHepG2counts,
+  color = heat.colors, cluster_rows = T, cluster_cols = T, clustering_distance_rows = "correlation", clustering_distance_cols = "correlation", show_rownames = T, show_colnames = F,
+  border_color = NA, fontsize = 10, scale = "row",
+  fontsize_row = 10, height = 5, width = 5, annotation_col = HepG2samples
+)
 ```
+
+
+
+
 
 
